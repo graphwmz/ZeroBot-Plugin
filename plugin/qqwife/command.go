@@ -122,12 +122,12 @@ func init() {
 			userInfo, _ := 民政局.查户口(gid, uid)
 			switch {
 			case userInfo != (userinfo{}) && (userInfo.Target == 0 || userInfo.User == 0): // 如果是单身贵族
-				ctx.SendChain(message.Text("今天你是单身贵族噢"))
+				ctx.SendChain(message.Text("今天你是单身贵族噢,快快在群里嫖一个吧"))
 				return
 			case userInfo.User == uid: // 娶过别人
 				ctx.SendChain(
 					message.At(uid),
-					message.Text("\n今天你在", userInfo.Updatetime, "娶了群友"),
+					message.Text("\n今天你在", userInfo.Updatetime, "娶了这位小可爱"),
 					message.Image("http://q4.qlogo.cn/g?b=qq&nk="+strconv.FormatInt(userInfo.Target, 10)+"&s=640").Add("cache", 0),
 					message.Text(
 						"\n",
@@ -139,12 +139,12 @@ func init() {
 			case userInfo.Target == uid: // 嫁给别人
 				ctx.SendChain(
 					message.At(uid),
-					message.Text("\n今天你在", userInfo.Updatetime, "被群友"),
+					message.Text("\n今天你在", userInfo.Updatetime, "被这位网友"),
 					message.Image("http://q4.qlogo.cn/g?b=qq&nk="+strconv.FormatInt(userInfo.User, 10)+"&s=640").Add("cache", 0),
 					message.Text(
 						"\n",
 						"[", userInfo.Username, "]",
-						"(", userInfo.User, ")娶了",
+						"(", userInfo.User, ")嫖了",
 					),
 				)
 				return
@@ -199,12 +199,12 @@ func init() {
 			// 请大家吃席
 			ctx.SendChain(
 				message.At(uid),
-				message.Text("今天你的群老婆是"),
+				message.Text("今天你的pao友是"),
 				message.Image("http://q4.qlogo.cn/g?b=qq&nk="+strconv.FormatInt(fiancee, 10)+"&s=640").Add("cache", 0),
 				message.Text(
 					"\n",
 					"[", ctx.CardOrNickName(fiancee), "]",
-					"(", fiancee, ")哒\n当前你们好感度为", favor,
+					"(", fiancee, ")哒\n当前你们的爱ai次数为", favor,
 				),
 			)
 		})
