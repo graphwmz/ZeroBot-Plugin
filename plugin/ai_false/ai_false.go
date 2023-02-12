@@ -14,14 +14,13 @@ import (
 
 	"github.com/FloatTech/AnimeAPI/bilibili"
 	"github.com/FloatTech/floatbox/file"
-	"github.com/FloatTech/floatbox/img/writer"
 	"github.com/FloatTech/floatbox/web"
 	"github.com/FloatTech/gg"
+	"github.com/FloatTech/imgfactory"
 	"github.com/FloatTech/rendercard"
 	ctrl "github.com/FloatTech/zbpctrl"
 	"github.com/FloatTech/zbputils/control"
 	"github.com/FloatTech/zbputils/ctxext"
-	"github.com/FloatTech/zbputils/img"
 	"github.com/FloatTech/zbputils/img/text"
 	"github.com/disintegration/imaging"
 	"github.com/shirou/gopsutil/v3/cpu"
@@ -70,11 +69,14 @@ func init() { // 插件主体
 				ctx.SendChain(message.Text("ERROR: ", err))
 				return
 			}
-			sendimg, cl := writer.ToBytes(img)
+			sendimg, err := imgfactory.ToBytes(img)
+			if err != nil {
+				ctx.SendChain(message.Text("ERROR: ", err))
+				return
+			}
 			if id := ctx.SendChain(message.ImageBytes(sendimg)); id.ID() == 0 {
 				ctx.SendChain(message.Text("ERROR: 可能被风控了"))
 			}
-			cl()
 		})
 	engine.OnRegex(`^设置默认限速为每\s*(\d+)\s*(分钟|秒)\s*(\d+)\s*次触发$`, zero.SuperUserPermission).SetBlock(true).
 		Handle(func(ctx *zero.Ctx) {
@@ -153,7 +155,7 @@ func drawstatus(m *ctrl.Control[*zero.Ctx], uid int64, botname string) (sendimg 
 	if err != nil {
 		return
 	}
-	avatarf := img.Size(avatar, 200, 200)
+	avatarf := imgfactory.Size(avatar, 200, 200)
 
 	fontbyte, err := file.GetLazyData(text.GlowSansFontFile, control.Md5File, true)
 	if err != nil {
@@ -165,10 +167,10 @@ func drawstatus(m *ctrl.Control[*zero.Ctx], uid int64, botname string) (sendimg 
 	bh, bw, ch, cw := float64(back.Bounds().Dy()), float64(back.Bounds().Dx()), float64(canvas.H()), float64(canvas.W())
 
 	if bh/bw < ch/cw {
-		back = img.Size(back, int(bw*ch/bh), int(bh*ch/bh)).Im
+		back = imgfactory.Size(back, int(bw*ch/bh), int(bh*ch/bh)).Image()
 		canvas.DrawImageAnchored(back, canvas.W()/2, canvas.H()/2, 0.5, 0.5)
 	} else {
-		back = img.Size(back, int(bw*cw/bw), int(bh*cw/bw)).Im
+		back = imgfactory.Size(back, int(bw*cw/bw), int(bh*cw/bw)).Image()
 		canvas.DrawImage(back, 0, 0)
 	}
 
@@ -194,9 +196,9 @@ func drawstatus(m *ctrl.Control[*zero.Ctx], uid int64, botname string) (sendimg 
 		titlecard.SetRGBA255(255, 255, 255, 140)
 		titlecard.Fill()
 
-		titlecard.DrawImage(avatarf.Circle(0).Im, (titlecardh-avatarf.H)/2, (titlecardh-avatarf.H)/2)
+		titlecard.DrawImage(avatarf.Circle(0).Image(), (titlecardh-avatarf.H())/2, (titlecardh-avatarf.H())/2)
 
-		err = titlecard.LoadFontFace(fontbyte, 72)
+		err = titlecard.ParseFontFace(fontbyte, 72)
 		if err != nil {
 			return
 		}
@@ -206,7 +208,7 @@ func drawstatus(m *ctrl.Control[*zero.Ctx], uid int64, botname string) (sendimg 
 
 		titlecard.DrawStringAnchored(botname, float64(titlecardh)+fw/2, float64(titlecardh)*0.5/2, 0.5, 0.5)
 
-		err = titlecard.LoadFontFace(fontbyte, 24)
+		err = titlecard.ParseFontFace(fontbyte, 24)
 		if err != nil {
 			return
 		}
@@ -273,7 +275,7 @@ func drawstatus(m *ctrl.Control[*zero.Ctx], uid int64, botname string) (sendimg 
 			basiccard.DrawCircle((float64(basiccard.W())-200*float64(bslen))/float64(bslen+1)+200/2+offset, 20+200/2, 80)
 			basiccard.Fill()
 
-			err = basiccard.LoadFontFace(fontbyte, 42)
+			err = basiccard.ParseFontFace(fontbyte, 42)
 			if err != nil {
 				return
 			}
@@ -285,7 +287,7 @@ func drawstatus(m *ctrl.Control[*zero.Ctx], uid int64, botname string) (sendimg 
 			_, fw := basiccard.MeasureString(v.name)
 			basiccard.DrawStringAnchored(v.name, (float64(basiccard.W())-200*float64(bslen))/float64(bslen+1)+200/2+offset, 20+200+15+basiccard.FontHeight()/2, 0.5, 0.5)
 
-			err = basiccard.LoadFontFace(fontbyte, 20)
+			err = basiccard.ParseFontFace(fontbyte, 20)
 			if err != nil {
 				return
 			}
@@ -303,14 +305,14 @@ func drawstatus(m *ctrl.Control[*zero.Ctx], uid int64, botname string) (sendimg 
 		diskcard := gg.NewContext(cardw, diskcardh)
 		diskcard.DrawImage(imaging.Blur(canvas.Image(), 8), -70, -70-titlecardh-40-basiccardh-40)
 
-		diskcard.DrawRoundedRectangle(1, 1, float64(diskcard.W()-1*2), float64(basiccardh-1*2), 16)
+		diskcard.DrawRoundedRectangle(1, 1, float64(diskcard.W()-1*2), float64(diskcardh-1*2), 16)
 		diskcard.SetLineWidth(3)
 		diskcard.SetRGBA255(255, 255, 255, 100)
 		diskcard.StrokePreserve()
 		diskcard.SetRGBA255(255, 255, 255, 140)
 		diskcard.Fill()
 
-		err = diskcard.LoadFontFace(fontbyte, 32)
+		err = diskcard.ParseFontFace(fontbyte, 32)
 		if err != nil {
 			return
 		}
@@ -386,7 +388,7 @@ func drawstatus(m *ctrl.Control[*zero.Ctx], uid int64, botname string) (sendimg 
 		moreinfocard.SetRGBA255(255, 255, 255, 140)
 		moreinfocard.Fill()
 
-		err = moreinfocard.LoadFontFace(fontbyte, 32)
+		err = moreinfocard.ParseFontFace(fontbyte, 32)
 		if err != nil {
 			return
 		}
@@ -432,7 +434,7 @@ func drawstatus(m *ctrl.Control[*zero.Ctx], uid int64, botname string) (sendimg 
 	canvas.DrawImage(diskimg, 70, 70+titlecardh+40+basiccardh+40)
 	canvas.DrawImage(moreinfoimg, 70, 70+titlecardh+40+basiccardh+40+diskcardh+40)
 
-	err = canvas.LoadFontFace(fontbyte, 28)
+	err = canvas.ParseFontFace(fontbyte, 28)
 	if err != nil {
 		return
 	}
