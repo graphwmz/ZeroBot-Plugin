@@ -1,3 +1,4 @@
+git clone https://gitee.com/lianhong2758/kokomi-plugin.git ./plugin/kokomi/
 go version
 go env -w GOPROXY=https://goproxy.cn,direct
 go env -w GO111MODULE=auto
